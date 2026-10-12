@@ -5,6 +5,8 @@ namespace GapBi.Api.Models
     {
         public int Id { get; set; }
 
+        public int IdExterno { get; set; }
+
         public string Nome { get; set; } = string.Empty;
 
         public string Categoria { get; set; } = string.Empty;

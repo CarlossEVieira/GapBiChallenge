@@ -25,6 +25,19 @@ namespace GapBi.Api.Data
         {
             base.OnModelCreating(modelBuilder);
 
+            // Impede a duplicação dos IDs externos
+            modelBuilder.Entity<Cliente>()
+                .HasIndex(cliente => cliente.IdExterno)
+                .IsUnique();
+
+            modelBuilder.Entity<Produto>()
+                .HasIndex(produto => produto.IdExterno)
+                .IsUnique();
+
+            modelBuilder.Entity<Pedido>()
+                .HasIndex(pedido => pedido.IdExterno)
+                .IsUnique();
+
             // Relacionamento entre Cliente e Pedido
             modelBuilder.Entity<Pedido>()
                 .HasOne(pedido => pedido.Cliente)

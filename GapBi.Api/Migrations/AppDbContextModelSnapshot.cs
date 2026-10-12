@@ -34,6 +34,9 @@ namespace GapBi.Api.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("IdExterno")
+                        .HasColumnType("int");
+
                     b.Property<string>("Nome")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -43,6 +46,9 @@ namespace GapBi.Api.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("IdExterno")
+                        .IsUnique();
 
                     b.ToTable("Clientes");
                 });
@@ -58,6 +64,9 @@ namespace GapBi.Api.Migrations
                     b.Property<int>("ClienteId")
                         .HasColumnType("int");
 
+                    b.Property<int>("IdExterno")
+                        .HasColumnType("int");
+
                     b.Property<decimal>("Total")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
@@ -69,6 +78,9 @@ namespace GapBi.Api.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("ClienteId");
+
+                    b.HasIndex("IdExterno")
+                        .IsUnique();
 
                     b.ToTable("Pedidos");
                 });
@@ -123,6 +135,9 @@ namespace GapBi.Api.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("IdExterno")
+                        .HasColumnType("int");
+
                     b.Property<string>("Nome")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -132,6 +147,9 @@ namespace GapBi.Api.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("IdExterno")
+                        .IsUnique();
 
                     b.ToTable("Produtos");
                 });

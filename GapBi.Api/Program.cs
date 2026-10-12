@@ -1,11 +1,16 @@
 
 using GapBi.Api.Data;
 using Microsoft.EntityFrameworkCore;
+using GapBi.Api.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Configuração dos serviços da aplicação
 builder.Services.AddControllers();
+
+// Configuração do HttpClient para realizar requisições a APIs externas
+builder.Services.AddHttpClient();
+builder.Services.AddScoped<DummyJsonService>();
 
 // Configuração do OpenAPI
 builder.Services.AddOpenApi();
