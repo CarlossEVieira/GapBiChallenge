@@ -1,0 +1,23 @@
+
+# Arquivos gerados pelo .NET
+**/bin/
+**/obj/
+.vs/
+
+# Arquivos do Visual Studio Code
+.vscode/
+
+# Dependências do React
+**/node_modules/
+**/build/
+**/dist/
+
+# Variáveis de ambiente e configurações locais
+.env
+.env.*
+!.env.example
+**/appsettings.Development.json
+**/appsettings.Production.json
+
+# Logs
+*.log
