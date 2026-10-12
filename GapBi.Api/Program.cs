@@ -10,7 +10,12 @@ builder.Services.AddControllers();
 
 // Configuração do HttpClient para realizar requisições a APIs externas
 builder.Services.AddHttpClient();
+
+// Registra o serviço responsável por consultar a API DummyJSON
 builder.Services.AddScoped<DummyJsonService>();
+
+// Registra o serviço responsável pela sincronização dos dados
+builder.Services.AddScoped<SincronizacaoService>();
 
 // Configuração do OpenAPI
 builder.Services.AddOpenApi();
