@@ -180,11 +180,16 @@ namespace GapBi.Api.Services
 
             var produtos = await contextoBancoDados.Produtos.ToListAsync();
 
-            // Inicia uma transação para evitar gravações parciais
-            await using var transacao = await contextoBancoDados
-                .Database.BeginTransactionAsync();
 
-            int quantidadeProcessada = 0;
+            // Utiliza a transação existente ou cria uma para pedidos isolados
+            bool possuiTransacaoExterna =
+                contextoBancoDados.Database.CurrentTransaction != null;
+
+            var transacao = possuiTransacaoExterna
+                ? null
+                : await contextoBancoDados.Database.BeginTransactionAsync();
+
+                int quantidadeProcessada = 0;
 
             foreach (var pedidoJson in pedidos.EnumerateArray())
             {
@@ -290,11 +295,86 @@ namespace GapBi.Api.Services
             // Salva os pedidos e seus itens
             await contextoBancoDados.SaveChangesAsync();
 
-            // Confirma a transação somente após salvar tudo
-            await transacao.CommitAsync();
+            // Confirma somente a transação criada por este método
+            if (transacao != null)
+            {
+                await transacao.CommitAsync();
+                await transacao.DisposeAsync();
+            }
 
             return quantidadeProcessada;
         }
+        
+        // Executa a sincronização completa dos dados
+        public async Task<object> SincronizarTudoAsync()
+        {
+            // Inicia uma transação para proteger as alterações no banco
+            await using var transacao = await contextoBancoDados
+                .Database.BeginTransactionAsync();
 
+            try
+            {
+                // Sincroniza os dados na ordem dos relacionamentos
+                int totalProdutos = await SincronizarProdutosAsync();
+
+                int totalClientes = await SincronizarClientesAsync();
+
+                int totalPedidos = await SincronizarPedidosAsync();
+
+                // Registra a data e hora da sincronização
+                var sincronizacao = new Sincronizacao
+                {
+                    DataHora = DateTime.UtcNow,
+                    Sucesso = true,
+                    Mensagem = "Sincronização completa realizada com sucesso."
+                };
+
+                contextoBancoDados.Sincronizacoes.Add(sincronizacao);
+
+                await contextoBancoDados.SaveChangesAsync();
+
+                // Confirma todas as alterações no banco
+                await transacao.CommitAsync();
+
+                return new
+                {
+                    mensagem = sincronizacao.Mensagem,
+                    quantidadeProdutos = totalProdutos,
+                    quantidadeClientes = totalClientes,
+                    quantidadePedidos = totalPedidos,
+                    ultimaSincronizacao = sincronizacao.DataHora
+                };
+            }
+            catch
+            {
+                // Desfaz as alterações se ocorrer algum erro
+                await transacao.RollbackAsync();
+
+                throw;
+            }
+        }
+        
+        // Consulta a data e hora da última sincronização realizada com sucesso
+        public async Task<DateTime?> ObterUltimaSincronizacaoAsync()
+        {
+            // Busca o registro mais recente de sincronização bem-sucedida
+            var ultimaSincronizacao = await contextoBancoDados.Sincronizacoes
+                .AsNoTracking()
+                .Where(sincronizacao => sincronizacao.Sucesso)
+                .OrderByDescending(sincronizacao => sincronizacao.DataHora)
+                .FirstOrDefaultAsync();
+
+            // Retorna null caso nenhuma sincronização tenha sido realizada
+            if (ultimaSincronizacao == null)
+            {
+                return null;
+            }
+
+            // Identifica explicitamente que a data armazenada está em UTC
+            return DateTime.SpecifyKind(
+                ultimaSincronizacao.DataHora,
+                DateTimeKind.Utc
+            );
+        }
     }
 }

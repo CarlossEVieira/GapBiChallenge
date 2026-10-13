@@ -17,6 +17,9 @@ builder.Services.AddScoped<DummyJsonService>();
 // Registra o serviço responsável pela sincronização dos dados
 builder.Services.AddScoped<SincronizacaoService>();
 
+// Registra o serviço responsável pelos indicadores do dashboard
+builder.Services.AddScoped<IndicadoresService>();
+
 // Configuração do OpenAPI
 builder.Services.AddOpenApi();
 

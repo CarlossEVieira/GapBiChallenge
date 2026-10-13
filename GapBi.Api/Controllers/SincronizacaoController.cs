@@ -109,6 +109,62 @@ namespace GapBi.Api.Controllers
                 });
             }
         }
+        
+        // Endpoint para sincronizar produtos, clientes e pedidos
+        [HttpPost("completa")]
+        public async Task<IActionResult> SincronizarTudo()
+        {
+            try
+            {
+                var resultado = await sincronizacaoService
+                    .SincronizarTudoAsync();
 
+                return Ok(resultado);
+            }
+            catch (Exception)
+            {
+                return StatusCode(500, new
+                {
+                    mensagem = "Não foi possível concluir a sincronização."
+                });
+            }
+        }
+        
+        // Endpoint para consultar a última sincronização realizada
+        [HttpGet("ultima")]
+        public async Task<IActionResult> ObterUltimaSincronizacao()
+        {
+            try
+            {
+                // Consulta a data e hora da última sincronização
+                var dataHora = await sincronizacaoService
+                    .ObterUltimaSincronizacaoAsync();
+
+                // Retorna uma mensagem caso ainda não exista sincronização
+                if (dataHora == null)
+                {
+                    return Ok(new
+                    {
+                        mensagem = "Nenhuma sincronização realizada.",
+                        ultimaSincronizacao = (DateTime?)null
+                    });
+                }
+
+                // Retorna a data e hora em UTC
+                return Ok(new
+                {
+                    mensagem = "Última sincronização consultada com sucesso.",
+                    ultimaSincronizacao = dataHora
+                });
+            }
+            catch (Exception)
+            {
+                // Retorna uma mensagem caso ocorra algum erro
+                return StatusCode(500, new
+                {
+                    mensagem = "Erro ao consultar a última sincronização."
+                });
+            }
+        }
     }
 }
