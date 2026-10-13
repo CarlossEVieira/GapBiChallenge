@@ -1,0 +1,47 @@
+
+/* Estilo geral do dashboard */
+body {
+  background-color: #f4f6f9;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Título principal */
+.titulo-dashboard {
+  color: #17365d;
+  font-size: 32px;
+  font-weight: bold;
+}
+
+/* Cartões dos indicadores */
+.card-indicador {
+  border: none;
+  border-radius: 12px;
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.07);
+  height: 100%;
+}
+
+/* Nome do indicador */
+.card-indicador h6 {
+  color: #6c757d;
+  font-size: 14px;
+  margin-bottom: 12px;
+}
+
+/* Valor do indicador */
+.card-indicador h3 {
+  color: #17365d;
+  font-size: clamp(20px, 2vw, 26px);
+  font-weight: bold;
+  overflow-wrap: anywhere;
+}
+
+/* Botão de sincronização */
+.btn-primary {
+  background-color: #17365d;
+  border-color: #17365d;
+}
+
+.btn-primary:hover {
+  background-color: #24558b;
+  border-color: #24558b;
+}
