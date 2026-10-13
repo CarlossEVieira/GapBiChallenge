@@ -156,6 +156,145 @@ namespace GapBi.Api.Services
 
             return quantidadeProcessada;
         }
+        
+        // Busca os pedidos da DummyJSON e salva no SQL Server
+        public async Task<int> SincronizarPedidosAsync()
+        {
+            // Consulta todos os carrinhos da API externa
+            var dados = await dummyJsonService.BuscarDadosAsync("carts");
+
+            var pedidos = dados.GetProperty("carts");
+
+            int totalEsperado = dados.GetProperty("total").GetInt32();
+
+            // Confere se todos os pedidos foram retornados
+            if (pedidos.GetArrayLength() != totalEsperado)
+            {
+                throw new Exception(
+                    "A API externa não retornou todos os pedidos."
+                );
+            }
+
+            // Carrega os clientes e produtos cadastrados
+            var clientes = await contextoBancoDados.Clientes.ToListAsync();
+
+            var produtos = await contextoBancoDados.Produtos.ToListAsync();
+
+            // Inicia uma transação para evitar gravações parciais
+            await using var transacao = await contextoBancoDados
+                .Database.BeginTransactionAsync();
+
+            int quantidadeProcessada = 0;
+
+            foreach (var pedidoJson in pedidos.EnumerateArray())
+            {
+                int idExterno = pedidoJson.GetProperty("id").GetInt32();
+
+                int clienteIdExterno = pedidoJson.GetProperty("userId").GetInt32();
+
+                // Localiza o cliente pelo identificador externo
+                var cliente = clientes.FirstOrDefault(
+                    cliente => cliente.IdExterno == clienteIdExterno
+                );
+
+                if (cliente == null)
+                {
+                    throw new Exception(
+                        $"Cliente externo {clienteIdExterno} não encontrado."
+                    );
+                }
+
+                decimal total = pedidoJson.GetProperty("total").GetDecimal();
+
+                decimal totalComDesconto = pedidoJson
+                    .GetProperty("discountedTotal").GetDecimal();
+
+                // Verifica se o pedido já existe no banco
+                var pedidoExistente = await contextoBancoDados.Pedidos
+                    .Include(pedido => pedido.Itens)
+                    .FirstOrDefaultAsync(
+                        pedido => pedido.IdExterno == idExterno
+                    );
+
+                Pedido pedidoAtual;
+
+                if (pedidoExistente == null)
+                {
+                    // Cria um novo pedido
+                    pedidoAtual = new Pedido
+                    {
+                        IdExterno = idExterno,
+                        ClienteId = cliente.Id,
+                        Total = total,
+                        TotalComDesconto = totalComDesconto
+                    };
+
+                    contextoBancoDados.Pedidos.Add(pedidoAtual);
+                }
+                else
+                {
+                    // Atualiza o pedido existente
+                    pedidoAtual = pedidoExistente;
+
+                    pedidoAtual.ClienteId = cliente.Id;
+                    pedidoAtual.Total = total;
+                    pedidoAtual.TotalComDesconto = totalComDesconto;
+
+                    // Remove os itens antigos para evitar duplicações
+                    contextoBancoDados.PedidoItens.RemoveRange(
+                        pedidoAtual.Itens
+                    );
+                }
+
+                // Percorre os produtos do pedido
+                var itensJson = pedidoJson.GetProperty("products");
+
+                foreach (var itemJson in itensJson.EnumerateArray())
+                {
+                    int produtoIdExterno = itemJson
+                        .GetProperty("id").GetInt32();
+
+                    // Localiza o produto pelo identificador externo
+                    var produto = produtos.FirstOrDefault(
+                        produto => produto.IdExterno == produtoIdExterno
+                    );
+
+                    if (produto == null)
+                    {
+                        throw new Exception(
+                            $"Produto externo {produtoIdExterno} não encontrado."
+                        );
+                    }
+
+                    // Cria o item relacionado ao pedido e produto
+                    var novoItem = new PedidoItem
+                    {
+                        Pedido = pedidoAtual,
+                        ProdutoId = produto.Id,
+                        Quantidade = itemJson
+                            .GetProperty("quantity").GetInt32(),
+                        Preco = itemJson
+                            .GetProperty("price").GetDecimal(),
+                        Total = itemJson
+                            .GetProperty("total").GetDecimal(),
+                        TotalComDesconto = itemJson
+                            .GetProperty("discountedTotal").GetDecimal()
+                    };
+
+                    contextoBancoDados.PedidoItens.Add(novoItem);
+                }
+
+                quantidadeProcessada++;
+            }
+
+            // Salva os pedidos e seus itens
+            await contextoBancoDados.SaveChangesAsync();
+
+            // Confirma a transação somente após salvar tudo
+            await transacao.CommitAsync();
+
+            return quantidadeProcessada;
+        }
 
     }
 }

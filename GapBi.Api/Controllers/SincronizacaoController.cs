@@ -77,6 +77,38 @@ namespace GapBi.Api.Controllers
                 });
             }
         }
+        
+        // Endpoint para sincronizar os pedidos e seus itens
+        [HttpPost("pedidos")]
+        public async Task<IActionResult> SincronizarPedidos()
+        {
+            try
+            {
+                int quantidade = await sincronizacaoService
+                    .SincronizarPedidosAsync();
+
+                return Ok(new
+                {
+                    mensagem = "Pedidos sincronizados com sucesso!",
+                    quantidadePedidos = quantidade
+                });
+            }
+            catch (HttpRequestException)
+            {
+                return StatusCode(502, new
+                {
+                    mensagem = "Não foi possível acessar a API DummyJSON."
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new
+                {
+                    mensagem = "Erro ao sincronizar os pedidos.",
+                    detalhe = ex.Message
+                });
+            }
+        }
 
     }
 }
